@@ -1,0 +1,26 @@
+{
+  "name": "Random photos",
+  "options": [
+    {
+      "title": "Random photos",
+      "type": "section"
+    },
+    {
+      "title": "Photos",
+      "name": "photos",
+      "type": "list",
+      "itemname": "Photo",
+      "items": [
+        {
+          "title": "Photo",
+          "name": "file",
+          "type": "resource",
+          "valid": [
+            "image"
+          ],
+          "default": "empty.png"
+        }
+      ]
+    }
+  ]
+}

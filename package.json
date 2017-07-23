@@ -1,0 +1,7 @@
+{
+    "name": "Walk-in",
+    "author": "craig@netchaos.net",
+    "desc": "Displays content for audience walk in / out and event slide during events",
+    "repository": "https://github.com/edbookfest/walkin-display.git",
+    "version": "1.0"
+}

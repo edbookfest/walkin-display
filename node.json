@@ -1,0 +1,116 @@
+{
+  "name": "Walk-in/out player",
+  "options": [
+    {
+      "title": "Walk-in/out Playlist",
+      "type": "section"
+    },
+    {
+      "title": "Playlist",
+      "name": "playlist",
+      "type": "list",
+      "itemname": "Item",
+      "items": [
+        {
+          "title": "Asset",
+          "ui_width": 6,
+          "name": "file",
+          "type": "resource",
+          "valid": [
+            "image",
+            "video",
+            "child"
+          ],
+          "default": "empty.png"
+        },
+        {
+          "title": "Play time",
+          "ui_width": 3,
+          "name": "duration",
+          "type": "duration",
+          "hint": "How long should this item be displayed on screen. For videos, use their duration",
+          "default": 8
+        }
+      ]
+    },
+    {
+      "title": "Configuration",
+      "type": "section"
+    },
+    {
+      "title": "Switch time",
+      "ui_width": 4,
+      "name": "switch_time",
+      "type": "select",
+      "doc_link": true,
+      "options": [
+        [
+          0,
+          "Instantly"
+        ],
+        [
+          0.4,
+          "Fast"
+        ],
+        [
+          0.8,
+          "Slow (default)"
+        ]
+      ],
+      "default": 0.8
+    },
+    {
+      "title": "Progress indicator",
+      "ui_width": 4,
+      "name": "progress",
+      "type": "select",
+      "hint": "Shows how long the current playlist item is displayed",
+      "doc_link": true,
+      "options": [
+        [
+          "no",
+          "Disabled"
+        ],
+        [
+          "bar_thin_white",
+          "Bar (thin, white)"
+        ],
+        [
+          "bar_thin_black",
+          "Bar (thin, black)"
+        ],
+        [
+          "countdown",
+          "Countdown"
+        ]
+      ],
+      "default": "no"
+    },
+    {
+      "title": "Screen Configuration",
+      "type": "section"
+    },
+    {
+      "title": "Automatic resolution",
+      "ui_width": 4,
+      "name": "auto_resolution",
+      "type": "boolean",
+      "default": false,
+      "hint": "If you know the correct output resolution for your display you should enter it manually and leave automatic detection disabled."
+    },
+    {
+      "title": "Manual width",
+      "ui_width": 4,
+      "name": "width",
+      "type": "integer",
+      "default": 1920
+    },
+    {
+      "title": "Manual height",
+      "ui_width": 4,
+      "name": "height",
+      "type": "integer",
+      "default": 1080
+    }
+  ]
+}

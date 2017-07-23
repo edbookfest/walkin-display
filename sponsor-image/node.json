@@ -1,0 +1,43 @@
+{
+  "name": "Sponsored events",
+  "options": [
+    {
+      "title": "Sponsored events",
+      "type": "section"
+    },
+    {
+      "title": "Sponsored events",
+      "name": "events",
+      "type": "list",
+      "itemname": "Sponsored event",
+      "ui_width": 12,
+      "items": [
+        {
+          "title": "Event ID",
+          "ui_width": 2,
+          "name": "event_id",
+          "type": "integer",
+          "default": 1234
+        },
+        {
+          "title": "Playlist",
+          "name": "playlist",
+          "type": "list",
+          "itemname": "Image",
+          "items": [
+            {
+              "title": "Image",
+              "ui_width": 12,
+              "name": "file",
+              "type": "resource",
+              "valid": [
+                "image"
+              ],
+              "default": "empty.png"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
