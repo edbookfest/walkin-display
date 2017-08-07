@@ -50,9 +50,49 @@ local function strtobool(str)
     return false
 end
 
-local function printWalkinState()
-    print("CURRENTLY SHOWING: " .. walkin_state)
-end
+local Clock = (function()
+    local offset = 0
+    local base = 0
+    local stoppped = false
+
+    local function now()
+        if stopped then
+            return base
+        else
+            return sys.now() - base - offset
+        end
+    end
+
+    local function offset_clock(i)
+        offset = i
+    end
+
+    local function pause()
+        if not stopped then
+            base = now()
+            stopped = true
+        end
+    end
+
+    local function resume()
+        if stopped then
+            base = sys.now() - base - offset
+            stopped = false
+        end
+    end
+
+    local function reset()
+        base = sys.now()
+    end
+
+    return {
+        now = now;
+        pause = pause;
+        resume = resume;
+        reset = reset;
+        offset = offset_clock;
+    }
+end)()
 
 local Loading = (function()
     local loading = "Loading..."
@@ -259,7 +299,7 @@ local ImageJob = function(item, ctx, fn)
     print(">>> IMAGE", res, ctx.starts, ctx.ends)
 
     while true do
-        local now = sys.now()
+        local now = Clock.now()
         if walkin_state ~= "eventslide" then
             util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(ctx.starts, ctx.ends, now, Config.get_switch_time()))
             draw_progress(ctx.starts, ctx.ends, now)
@@ -304,7 +344,7 @@ local VideoJob = function(item, ctx, fn)
     res:start()
 
     while true do
-        local now = sys.now()
+        local now = Clock.now()
         if walkin_state ~= "eventslide" then
             local state, width, height = res:state()
             if state ~= "finished" then
@@ -355,7 +395,7 @@ local ChildJob = function(item, ctx, fn)
     print(">>> CHILD", res, ctx.starts, ctx.ends)
 
     while true do
-        local now = sys.now()
+        local now = Clock.now()
         if walkin_state ~= "eventslide" then
             util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(ctx.starts, ctx.ends, now, Config.get_switch_time()))
             draw_progress(ctx.starts, ctx.ends, now)
@@ -394,7 +434,7 @@ local ModuleJob = function(item, ctx, fn)
     print(">>> MODULE", item.asset_name, ctx.starts, ctx.ends)
 
     while true do
-        local now = sys.now()
+        local now = Clock.now()
         if walkin_state ~= "eventslide" then
             util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(ctx.starts, ctx.ends, now, Config.get_switch_time()))
             draw_progress(ctx.starts, ctx.ends, now)
@@ -413,11 +453,11 @@ end
 
 local Queue = (function()
     local jobs = {}
-    local scheduled_until = sys.now()
+    local scheduled_until = Clock.now()
 
     local function clear_jobs()
         jobs = {}
-        scheduled_until = sys.now()
+        scheduled_until = Clock.now()
     end
 
     local function enqueue(starts, ends, item)
@@ -478,7 +518,7 @@ local Queue = (function()
         gl.clear(0, 0, 0, 0)
 
         for try = 1, 3 do
-            if sys.now() + settings.PRELOAD_TIME < scheduled_until then
+            if Clock.now() + settings.PRELOAD_TIME < scheduled_until then
                 break
             end
             local item = Scheduler.get_next()
@@ -491,7 +531,7 @@ local Queue = (function()
             Loading.fade_out()
         end
 
-        local now = sys.now()
+        local now = Clock.now()
         for idx = #jobs, 1, -1 do -- iterate backwards so we can remove finished jobs
             local job = jobs[idx]
             local success, is_finished = coroutine.resume(job.co, now)
@@ -512,6 +552,10 @@ local Queue = (function()
     }
 end)()
 
+local function printWalkinState()
+    print("CURRENTLY SHOWING: " .. walkin_state .. " Time now: " .. math.floor(Clock.now()))
+end
+
 util.data_mapper {
     ["show_event_slide"] = function(v)
         local status = strtobool(v)
@@ -529,6 +573,7 @@ util.data_mapper {
         end
     end;
     ["eventid"] = function(eventid)
+        Clock.reset()
         Queue.clear_jobs()
         Scheduler.restart_schedule()
     end;
@@ -538,10 +583,18 @@ util.set_interval(1, node.gc)
 
 util.set_interval(5, printWalkinState)
 
+Clock.offset(sys.now())
+
 function node.render()
     gl.clear(0, 0, 0, 1)
 
     Queue.tick()
+
+    if walkin_state == "eventslide" then
+        Clock.pause()
+    else
+        Clock.resume()
+    end
 
     local now = sys.now()
 
