@@ -440,8 +440,8 @@ local Queue = (function()
             asset = openfile
         end
 
-        -- an image may overlap another image
-        if #jobs > 0 and jobs[#jobs].type == "image" and item.type == "image" then
+        -- start all content at begining of transition
+        if #jobs > 0 then
             starts = starts - Config.get_switch_time()
         end
 
