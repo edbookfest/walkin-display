@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+<button id="show-walkin" class="btn btn-success">Walk-in/out</button>
+<button id="show-event-slide" class="btn btn-info">Event slide</button>
+<hr>
+<form class="form-inline">
+  <div class="form-group">
+    <label for="event-id">Event ID:</label>
+    <input type="number" min="0" step="1" class="form-control" id="event-id">
+  </div>
+  <button id="load-event" type="submit" class="btn btn-danger">Load event</button>
+</form>
+<hr>
+<script src="hosted.js"></script>
+<script>
+  ib.setDefaultStyle();
+
+  document.getElementById('load-event').addEventListener('click', function (e) {
+    var event_id = document.getElementById('event-id').value;
+    ib.sendCommand("eventid", event_id);
+  });
+
+  document.getElementById('show-walkin').addEventListener('click', function (e) {
+    ib.sendCommand("show_event_slide", "false");
+  });
+
+  document.getElementById('show-event-slide').addEventListener('click', function (e) {
+    ib.sendCommand("show_event_slide", "true");
+  });
+</script>
+</body>
+</html>
