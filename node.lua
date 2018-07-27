@@ -428,10 +428,16 @@ local Queue = (function()
             module = ModuleJob,
         })[item.type])
 
-        local success, asset = pcall(resource.open_file, item.asset_name)
-        if not success then
-            print("CANNOT GRAB ASSET: ", asset)
-            return
+        local asset = null
+        if (item.type == "child" or item.type == "module") then
+            asset = item
+        else
+            local success, openfile = pcall(resource.open_file, item.asset_name)
+            if not success then
+                print("CANNOT GRAB ASSET: ", asset)
+                return
+            end
+            asset = openfile
         end
 
         -- an image may overlap another image
