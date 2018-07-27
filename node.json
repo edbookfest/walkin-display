@@ -1,5 +1,6 @@
 {
   "name": "Walk-in/out player",
+  "control_ui": "control.html",
   "options": [
     {
       "title": "Walk-in/out Playlist",
