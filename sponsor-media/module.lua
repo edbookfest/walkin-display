@@ -87,7 +87,10 @@ local function get_next_sponsor_image()
         print("CANNOT GRAB ASSET: ", asset)
         return
     end
-    return asset
+    return {
+        item = item,
+        asset = asset
+    }
 end
 
 print "Sponsor image player init"
@@ -101,8 +104,18 @@ end
 
 function M.get_surface()
     if M.has_content() then
-        sponsor_image = resource.load_image(get_next_sponsor_image())
-        return sponsor_image
+        local next_asset = get_next_sponsor_image()
+        local type = next_asset.item.type
+        if (type == "video") then
+            return resource.load_video {
+                file = next_asset.asset;
+                audio = false;
+                looped = false;
+                paused = false;
+            }
+        elseif (type == "image") then
+            return resource.load_image(next_asset.asset)
+        end
     end
 end
 

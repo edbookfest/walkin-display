@@ -23,15 +23,16 @@
           "title": "Playlist",
           "name": "playlist",
           "type": "list",
-          "itemname": "Image",
+          "itemname": "Media",
           "items": [
             {
-              "title": "Image",
+              "title": "Media",
               "ui_width": 12,
               "name": "file",
               "type": "resource",
               "valid": [
-                "image"
+                "image",
+                "video"
               ],
               "default": "empty.png"
             }
