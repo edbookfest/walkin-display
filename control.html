@@ -4,15 +4,24 @@
   <meta charset="UTF-8">
 </head>
 <body>
-<button id="show-walkin" class="btn btn-success">Walk-in/out</button>
-<button id="show-event-slide" class="btn btn-info">Event slide</button>
+<button id="show-walkin" class="btn btn-lg btn-success">
+  <i class="glyphicon glyphicon-sound-stereo"></i>
+  Walk-in/out
+</button>
+<button id="show-event-slide" class="btn btn-lg btn-warning">
+  <i class="glyphicon glyphicon-picture"></i>
+  Event slide
+</button>
 <hr>
 <form class="form-inline">
   <div class="form-group">
-    <label for="event-id">Event ID:</label>
-    <input type="number" min="0" step="1" class="form-control" id="event-id">
+    <label class="sr-only" for="event-id">Event ID:</label>
+    <input type="number" min="0" step="1" class="form-control" id="event-id" placeholder="Event ID">
   </div>
-  <button id="load-event" type="submit" class="btn btn-danger">Load event</button>
+  <button id="load-event" type="submit" class="btn btn-danger">
+    <i class="glyphicon glyphicon-circle-arrow-down"></i>
+    Load event
+  </button>
 </form>
 <hr>
 <script src="hosted.js"></script>
@@ -22,6 +31,7 @@
   document.getElementById('load-event').addEventListener('click', function (e) {
     var event_id = document.getElementById('event-id').value;
     ib.sendCommand("eventid", event_id);
+    ib.sendCommand("event-slide/eventid", event_id);
   });
 
   document.getElementById('show-walkin').addEventListener('click', function (e) {
