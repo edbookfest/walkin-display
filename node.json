@@ -61,33 +61,6 @@
       "default": 0.8
     },
     {
-      "title": "Progress indicator",
-      "ui_width": 4,
-      "name": "progress",
-      "type": "select",
-      "hint": "Shows how long the current playlist item is displayed",
-      "doc_link": true,
-      "options": [
-        [
-          "no",
-          "Disabled"
-        ],
-        [
-          "bar_thin_white",
-          "Bar (thin, white)"
-        ],
-        [
-          "bar_thin_black",
-          "Bar (thin, black)"
-        ],
-        [
-          "countdown",
-          "Countdown"
-        ]
-      ],
-      "default": "no"
-    },
-    {
       "title": "Screen Configuration",
       "type": "section"
     },
