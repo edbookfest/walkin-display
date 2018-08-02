@@ -24,6 +24,22 @@
   </button>
 </form>
 <hr>
+<h4>Debug tools</h4>
+<form class="form-inline">
+  <fieldset>
+    <div class="form-group">
+      <label for="progress-indicator-type">Progress indicator</label>
+      <select class="form-control" id="progress-indicator-type">
+        <option value="bar_thin_white" selected>Bar (white)</option>
+        <option value="bar_thin_black">Bar (black)</option>
+        <option value="countdown">Countdown</option>
+      </select>
+    </div>
+    <button id="enable-progress-indicator" class="btn btn-sm btn-success">Enable</button>
+    <button id="disable-progress-indicator" class="btn btn-sm btn-danger">Disable</button>
+  </fieldset>
+</form>
+<hr>
 <script src="hosted.js"></script>
 <script>
   ib.setDefaultStyle();
@@ -40,6 +56,15 @@
 
   document.getElementById('show-event-slide').addEventListener('click', function (e) {
     ib.sendCommand("show_event_slide", "true");
+  });
+
+  document.getElementById('enable-progress-indicator').addEventListener('click', function (e) {
+    var progress_type = document.getElementById('progress-indicator-type').value;
+    ib.sendCommand("show_progress-indicator", progress_type);
+  });
+
+  document.getElementById('disable-progress-indicator').addEventListener('click', function (e) {
+    ib.sendCommand("show_progress_indicator", "no");
   });
 </script>
 </body>

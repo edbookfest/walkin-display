@@ -10,6 +10,7 @@ local show_event_slide = false
 local switch_time = sys.now()
 local event_slide
 local event_slide_alpha = 0
+local progress_indicator = "no"
 
 local settings = {
     IMAGE_PRELOAD = 2;
@@ -104,8 +105,6 @@ local Config = (function()
         print("updated " .. config_file)
         local config = json.decode(raw)
 
-        progress = config.progress
-
         if config.auto_resolution then
             gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
         else
@@ -146,7 +145,6 @@ local Config = (function()
     return {
         get_playlist = function() return playlist end;
         get_switch_time = function() return switch_time end;
-        get_progress = function() return progress end;
     }
 end)()
 
@@ -209,7 +207,7 @@ local Scheduler = (function()
 end)()
 
 local function draw_progress(starts, ends, now)
-    local mode = Config.get_progress()
+    local mode = progress_indicator
     if mode == "no" then
         return
     end
@@ -537,6 +535,9 @@ util.data_mapper {
     ["eventid"] = function(eventid)
         Queue.clear_jobs()
         Scheduler.restart_schedule()
+    end;
+    ["show_progress"] = function(v)
+        progress_indicator = v;
     end;
 }
 
