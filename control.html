@@ -47,7 +47,7 @@
   document.getElementById('load-event').addEventListener('click', function (e) {
     var event_id = document.getElementById('event-id').value;
     ib.sendCommand("eventid", event_id);
-    ib.sendCommand("event-slide/eventid", event_id);
+    ib.sendCommand("walkin/event-slide/eventid", event_id);
   });
 
   document.getElementById('show-walkin').addEventListener('click', function (e) {
