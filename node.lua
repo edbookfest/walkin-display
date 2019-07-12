@@ -565,7 +565,7 @@ function node.render()
         event_slide:draw(0, 0, WIDTH, HEIGHT, event_slide_alpha)
     end
 
-    if event_slide_alpha <= 0 then
+    if event_slide_alpha < 0 then
         walkin_state = "walkin"
     end
 
