@@ -27,21 +27,24 @@ class Hdr1:
         self._connect()
 
     def _log(self, msg):
-        print >> sys.stderr, "[HD-R1] %s" % msg
+        print >> sys.stderr, "[LOCAL-CONTROL][HD-R1] %s" % msg
 
     def _debug(self, msg):
         if self._debug_enabled:
             self._log(msg)
 
     def _send(self, command):
-        self._debug("SEND:" + command)
-        self._telnet.write(command + "\n")
-        response = self._telnet.read_eager()
-        response += self._telnet.read_until("HD-R1>", 1).strip("HD-R1>")
-        response = response.strip()
-        self._debug("RECV:" + response)
+        try:
+            self._debug("SEND:" + command)
+            self._telnet.write(command + "\n")
+            response = self._telnet.read_eager()
+            response += self._telnet.read_until("HD-R1>", 1).strip("HD-R1>")
+            response = response.strip()
+            self._debug("RECV:" + response)
 
-        return str(response)
+            return str(response)
+        except (socket.error, EOFError):
+            raise ConnectionError("Connection failed")
 
     def _connect(self):
         try:
@@ -78,7 +81,6 @@ class Hdr1:
             raise InvalidArgumentException("Invalid parameter %s" % parameter)
 
         if response == "":
-            self._telnet.close()
             raise ConnectionError("Gone away")
 
         parts = response.split("=")

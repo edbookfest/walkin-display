@@ -1,5 +1,6 @@
 import threading
 import time
+from threading import Event
 
 import hdr1
 from log import log
@@ -10,6 +11,7 @@ class RecorderException(Exception):
 
 
 class Recorder:
+    _disconnected = None  # type: Event
     _device = None  # type: hdr1
 
     def __init__(self, venue_name, debug_enabled=False):
@@ -19,51 +21,66 @@ class Recorder:
         self._venue_name = venue_name
         self._debug_enabled = debug_enabled
         self._device = None
+        self._disconnected = threading.Event()
+        self._device_ip_address = None
 
-    def connect(self, ip_address):
-        def do_work():
+    def _connect(self):
+        try:
+            self._device = hdr1.Hdr1(self._device_ip_address, self._debug_enabled)
+            self._disconnected.clear()
+            log("Connected to HD-R1 " + self._device_ip_address)
+            return True
+        except hdr1.ConnectionError as e:
+            log("Failed to connect to HD-R1: " + e.message)
+            return False
+
+    def connected(self):
+        return not self._disconnected.is_set()
+
+    def _reconnect(self):
+        self._disconnected.set()
+
+    def maintain_connection(self, ip_address):
+        self._device_ip_address = ip_address
+
+        def loop():
             while 1:
-                if self._device is None:
-                    try:
-                        self._device = hdr1.Hdr1(ip_address, self._debug_enabled)
-                        log("Connected to HD-R1 " + ip_address)
-                    except hdr1.ConnectionError:
-                        log("Failed to connect to HD-R1")
-                time.sleep(10)
+                if not self._connect():
+                    # if it did not connect immediately, wait a moment before trying again
+                    time.sleep(5)
+                    self._disconnected.set()
+                self._disconnected.wait()
 
-        t = threading.Thread(target=do_work)
+        t = threading.Thread(target=loop)
         t.daemon = True
         t.start()
 
+    def _send_command(self, fn, *args):
+        # attempt this unit of work twice
+        for attempt in range(1, 3):
+            try:
+                # if we know we're disconnected, fail immediately
+                if self.connected():
+                    return fn(*args)
+                raise RecorderException("Not connected")
+            except hdr1.ConnectionError:
+                # if we're disconnected, reconnect
+                self._reconnect()
+                # wait a moment for it to reconnect and try again
+                time.sleep(2)
+            except hdr1.InvalidArgumentException as e:
+                # if the option was invalid, fail immediately, it's not going to work next time
+                raise RecorderException(e.message)
+        else:
+            raise RecorderException("Failed after 2 attempts")
+
     def get_parameter(self, parameter):
         # type: (str) -> str
-        if self._device:
-            try:
-                return self._device.get_parameter(parameter)
-
-            except hdr1.ConnectionError as e:
-                self._device = None
-                raise RecorderException(e.message)
-
-            except hdr1.InvalidArgumentException as e:
-                raise RecorderException(e.message)
-
-        raise RecorderException("Not connected")
+        return self._send_command(self._device.get_parameter, parameter)
 
     def set_parameter(self, parameter, option):
         # type: (str, str) -> str
-        if self._device:
-            try:
-                return self._device.set_parameter(parameter, option)
-
-            except hdr1.ConnectionError as e:
-                self._device = None
-                raise RecorderException(e.message)
-
-            except (hdr1.InvalidArgumentException, hdr1.MustBeInStopException) as e:
-                raise RecorderException(e.message)
-
-        raise RecorderException("Not connected")
+        return self._send_command(self._device.set_parameter, parameter, option)
 
     def get_transport(self):
         return self.get_parameter("Transport")

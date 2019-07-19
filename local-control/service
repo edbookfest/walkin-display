@@ -29,7 +29,7 @@ class LocalControl:
         self._recorder = None
         if self._config.control_recorder:
             self._recorder = Recorder(self._config.record_venue_name, self._config.debug_enabled)
-            self._recorder.connect(self._config.recorder_ip)
+            self._recorder.maintain_connection(self._config.recorder_ip)
             # init recorder
 
     def run(self):
