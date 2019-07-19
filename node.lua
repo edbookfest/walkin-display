@@ -569,7 +569,7 @@ function node.render()
         walkin_state = "walkin"
     end
 
-    if event_slide_alpha >= 1 then
+    if event_slide_alpha > 1 then
         walkin_state = "eventslide"
     end
 
