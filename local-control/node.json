@@ -1,0 +1,45 @@
+{
+  "name": "Local control",
+  "permissions": {
+    "network": "Needed to access to audio recorder"
+  },
+  "options": [
+    {
+      "title": "Devices",
+      "name": "devices",
+      "type": "list",
+      "itemname": "Device",
+      "items": [
+        {
+          "name": "serial",
+          "title": "Device",
+          "type": "device",
+          "ui_width": 12
+        },
+        {
+          "name": "control_recorder",
+          "title": "Control recorder",
+          "type": "boolean",
+          "ui_width": 4,
+          "hint": "Enable local control of audio recorder?",
+          "default": false
+        },
+        {
+          "name": "recorder_ip",
+          "title": "Recorder IP address",
+          "type": "string",
+          "ui_width": 4,
+          "placeholder": "192.168.10.20"
+        },
+        {
+          "name": "record_venue_name",
+          "title": "Recording venue name",
+          "type": "string",
+          "ui_width": 4,
+          "hint": "Venue name for recorder output files",
+          "placeholder": "VENUE"
+        }
+      ]
+    }
+  ]
+}
