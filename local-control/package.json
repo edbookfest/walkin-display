@@ -1,0 +1,6 @@
+{
+  "name": "Local control module for walk-in",
+  "author": "craig@netchaos.net",
+  "desc": "Provides local control options for walk-in package",
+  "version": "0.1"
+}

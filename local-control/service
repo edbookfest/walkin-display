@@ -1,0 +1,228 @@
+#!/usr/bin/python2.7
+import os
+import xmlrpclib
+
+from hosted import node, config
+from keypad import Keypad
+from recorder import *
+
+config.restart_on_update()
+
+
+class LocalControl:
+    _recorder = None  # type: Recorder
+    SPECIAL_FUNCTION = 'special'
+    LOAD_EVENT = 'load-event'
+
+    def __init__(self, cfg):
+        self._config = cfg
+
+        self._cache_op = None
+        self._key_cache = ""
+        self._last_event_loaded = "unknown"
+        self._last_display_state = "unknown"
+
+        self._display = xmlrpclib.ServerProxy('http://localhost:8000')
+        self._display.clear()
+        self._display.write(1, "Local control ON")
+
+        self._recorder = None
+        if self._config.control_recorder:
+            self._recorder = Recorder(self._config.record_venue_name, self._config.debug_enabled)
+            self._recorder.maintain_connection(self._config.recorder_ip)
+            # init recorder
+            self._poll_transport()
+
+    def _poll_transport(self):
+        def loop():
+            while 1:
+                try:
+                    self._recorder.get_transport()
+                except RecorderException:
+                    pass
+                time.sleep(20)
+
+        t = threading.Thread(target=loop)
+        t.daemon = True
+        t.start()
+
+    def run(self):
+        kpd = Keypad(self._config.debug_enabled)
+        while True:
+            key = kpd.monitor_input()
+            if key is not None:
+                self._process_input(key)
+
+    def _process_input(self, key):
+        if key in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]:
+            if self._cache_op:
+                self._key_cache += str(key)
+                self._display.write(2, self._key_cache)
+
+        elif key == "KEY_KPENTER":
+            if self._key_cache:
+                self._display.clear()
+                if self._cache_op == self.LOAD_EVENT:
+                    self._load_event(self._key_cache)
+                if self._cache_op == self.SPECIAL_FUNCTION:
+                    self._special_function(self._key_cache)
+                self._cache_op = None
+                self._key_cache = ""
+            else:
+                self._display.flash(1, "IGNORED")
+        else:
+            self._key_cache = ""
+            self._cache_op = None
+
+            if key == "KEY_KPASTERISK":
+                self._display.clear()
+                self._display.write(1, "Enter event ID:")
+                self._cache_op = self.LOAD_EVENT
+
+            elif key == "KEY_TAB":
+                self._display.clear()
+                self._cache_op = self.SPECIAL_FUNCTION
+
+            elif key == "KEY_KPPLUS":
+                self._show_walkin()
+
+            elif key == "KEY_KPMINUS":
+                self._show_event_slide()
+
+            elif key == "KEY_HOMEPAGE":
+                self._display.write(1, "Event: " + self._last_event_loaded)
+                self._display.write(2, self._last_display_state)
+                if self._config.control_recorder:
+                    try:
+                        self._display.write(2, self._last_display_state + " " + self._recorder.get_transport())
+                    except RecorderException:
+                        pass
+
+    def _show_walkin(self):
+        log("WALKIN")
+        self._last_display_state = "Walk-in"
+        self._display.flash(1, "Walk-in")
+        node.send_raw('walkin/show_event_slide:false')
+
+    def _show_event_slide(self):
+        log("EVENT SLIDE")
+        self._last_display_state = "Event slide"
+        self._display.flash(1, "Event slide")
+        node.send_raw('walkin/show_event_slide:true')
+
+    def _load_event(self, event_id):
+        log("LOAD EVENT " + event_id)
+        self._last_event_loaded = event_id
+        self._display.flash(1, "Loading: " + event_id)
+
+        node.send_raw('walkin/eventid:' + event_id)
+        node.send_raw('walkin/event-slide/eventid:' + event_id)
+
+        if self._config.control_recorder:
+            try:
+                self._recorder.prepare_record(event_id)
+            except RecorderException as e:
+                self._display.write(2, e.message)
+
+    def _special_function(self, function):
+        if function == "10":
+            self._display.write(1, "Device serial")
+            self._display.write(2, os.environ["SERIAL"])
+
+        if function == "20":
+            self._display.write(1, "Last event")
+            self._display.write(2, self._last_event_loaded)
+
+        if function == "21":
+            self._display.write(1, "Last state")
+            self._display.write(2, self._last_display_state)
+
+        if function == "30":
+            self._display.write(1, "Rec enabled:")
+            self._display.write(2, str(self._config.control_recorder))
+
+        if function == "31":
+            self._display.write(1, "Rec IP:")
+            self._display.write(2, str(self._config.recorder_ip))
+
+        if function == "32":
+            self._display.write(1, "Rec venue name:")
+            self._display.write(2, str(self._config.record_venue_name))
+
+        if function == "40":
+            self._display.write(1, "REC> transport:")
+            if self._config.control_recorder:
+                try:
+                    self._display.write(2, self._recorder.get_transport())
+                except RecorderException as e:
+                    self._display.write(2, e.message)
+            else:
+                self._display.write(1, "REC> control disabled")
+
+        if function == "41":
+            self._display.write(1, "REC> Stop safely:")
+            if self._config.control_recorder:
+                try:
+                    self._display.write(2, self._recorder.stop_device_safely())
+                except RecorderException as e:
+                    self._display.write(2, e.message)
+            else:
+                self._display.write(1, "REC> control disabled")
+
+        if function == "42":
+            self._display.write(1, "REC> set defaults:")
+            if self._config.control_recorder:
+                try:
+                    self._display.write(2, self._recorder.set_default_parameters())
+                except RecorderException as e:
+                    self._display.write(2, e.message)
+            else:
+                self._display.write(1, "REC> control disabled")
+
+        if function == "98":
+            self._display.test()
+        if function == "99":
+            self._display.write(1, "ABCDEFGHIJKLMNOPQRST")
+            self._display.write(2, "UVWXYZ1234567890-*+/")
+        if function == "666":
+            self._display.write(1, "RESTARTING!")
+            time.sleep(1)
+            exit(1)
+
+
+class LocalControlConfig:
+    def __init__(self):
+        self.enabled = False
+        self.control_recorder = False
+        self.recorder_ip = None
+        self.record_venue_name = ""
+        self.debug_enabled = False
+
+        devices = config['devices']
+        device_serial_no = os.environ["SERIAL"]
+        for device in devices:
+            if device['serial'] == device_serial_no:
+                self.enabled = True
+                if device['control_recorder']:
+                    self.control_recorder = True
+                    self.recorder_ip = device['recorder_ip']
+                    self.record_venue_name = device['record_venue_name'][:6].upper()
+                else:
+                    log("Audio recorder not enabled")
+            else:
+                log("Device: " + device_serial_no + " not configured for local control")
+
+
+def main():
+    cfg = LocalControlConfig()
+    if cfg.enabled:
+        while True:
+            LocalControl(cfg).run()
+    else:
+        while True:
+            log("LOCAL CONTROL IS DISABLED")
+            time.sleep(30)
+
+
+if __name__ == "__main__":
+    main()

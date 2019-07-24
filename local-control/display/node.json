@@ -1,0 +1,23 @@
+{
+  "name": "BA63 Display",
+  "permissions": {
+    "run-as-root": "Needed to access /dev/hidraw(n)",
+    "unboxed": "Needed to access /dev/hidraw(n)"
+  },
+  "options": [
+    {
+      "title": "Devices",
+      "name": "devices",
+      "type": "list",
+      "itemname": "Device",
+      "items": [
+        {
+          "name": "serial",
+          "title": "Device",
+          "type": "device",
+          "ui_width": 12
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,157 @@
+#!/usr/bin/python2.7
+import os
+import re
+import subprocess
+import sys
+import threading
+import time
+from SimpleXMLRPCServer import SimpleXMLRPCServer
+
+from ba63vfd import Ba63Vfd
+from hosted import config
+from log import log
+
+config.restart_on_update()
+
+
+class Display:
+    def __init__(self):
+        self._ba63 = None  # type: Ba63Vfd
+        self._flash_timers = {}
+
+        self.serv = SimpleXMLRPCServer(("localhost", 8000), allow_none=True)
+        self.serv.register_function(self.write_line, 'write')
+        self.serv.register_function(self.flash_message, 'flash')
+        self.serv.register_function(self.clear_screen, 'clear')
+        self.serv.register_function(self.test, 'test')
+
+    def _log(self, msg):
+        print >> sys.stderr, "[LOCAL-CONTROL][DISPLAY] %s" % msg
+
+    def find_ba63(self):
+        """
+        Finds the path to the first Wincor Nixdorf BA63 device connected to the system.
+
+        This horrible method greps dmesg for all Wincor Nixdorf Display BA63/USB devices and attempts to check the last one
+        registered at least represents a valid path. It in no way guarantees it's the right device. Good luck.
+
+        * We don't have libusb or libhidapi so can't use any python library / wrapper around hidapi to enumerate devices.
+
+        * Likewise can't use any system utilities like lsusb (which isn't installed anyway)
+
+        * Can't probe every /dev/hidraw* device for a status response as the BA63 produces 2 devices which seem to appear in
+        a consistent order:
+          - The first device appears to be for proprietary firmware updating and writing anything to that device causes it
+            to change modes until restart rendering it useless for display purposes.
+          - The second device to register is the display device itself.
+
+        :return: path to device or none
+        :rtype: str
+        """
+        try:
+            device_name = "Wincor Nixdorf Display BA63/USB"
+            dmesg = subprocess.check_output('dmesg | grep "%s"' % device_name, shell=True).split('\n')
+            relevant_line = next(s for s in reversed(dmesg) if s)
+            matches = re.findall("hidraw\d+", relevant_line)
+            if matches:
+                path = '/dev/' + matches.pop()
+                if os.path.exists(path):
+                    return path
+
+        except subprocess.CalledProcessError as e:
+            if e.returncode > 1:
+                raise
+        return None
+
+    def connect(self):
+        while True:
+            if not self._ba63:
+                path = self.find_ba63()
+                if path:
+                    self._log("Found BA63 display: " + path)
+                    try:
+                        device = Ba63Vfd(path)
+                        device.write_line(1, "Display initialised")
+                        device.write_line(2, path)
+                        time.sleep(2)
+                        device.clear_screen()
+                        self._ba63 = device
+                    except OSError:
+                        pass
+                else:
+                    self._log("Could not find BA63 display")
+            time.sleep(10)
+
+    def watch_device(self):
+        thread = threading.Thread(target=self.connect)
+        thread.daemon = True
+        thread.start()
+
+    def _cancel_timer(self, line_no):
+        if line_no in self._flash_timers:
+            self._flash_timers[line_no].cancel()
+            del self._flash_timers[line_no]
+
+    def _set_timer(self, line_no):
+        self._flash_timers[line_no] = threading.Timer(3.0, self.clear_line, [line_no], {})
+        self._flash_timers[line_no].start()
+
+    def _handle_error(self):
+        self._log("BA63 display disconnected: " + self._ba63.fs_path)
+        self._ba63 = None
+
+    def test(self):
+        if self._ba63:
+            self._ba63.test()
+            return True
+
+    def write_line(self, line_no, msg):
+        if self._ba63:
+            try:
+                self._cancel_timer(line_no)
+                self._ba63.write_line(line_no, msg)
+                return True
+            except OSError:
+                self._handle_error()
+
+    def flash_message(self, line_no, msg):
+        if self._ba63:
+            self.write_line(line_no, msg)
+            self._set_timer(line_no)
+            return True
+
+    def clear_line(self, line_no):
+        if self._ba63:
+            try:
+                self._ba63.cursor_to_start_of_line(line_no)
+                self._ba63.clear_line_from_cursor()
+                return True
+            except OSError:
+                self._handle_error()
+
+    def clear_screen(self):
+        if self._ba63:
+            try:
+                self._ba63.clear_screen()
+                return True
+            except OSError:
+                self._handle_error()
+
+
+def main():
+    d = Display()
+
+    devices = config['devices']
+    device_serial_no = os.environ["SERIAL"]
+    for device in devices:
+        if device['serial'] == device_serial_no:
+            d.watch_device()
+        else:
+            log("Device: " + device_serial_no + " not configured for display")
+
+    while True:
+        d.serv.handle_request()
+
+
+if __name__ == "__main__":
+    main()
