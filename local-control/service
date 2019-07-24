@@ -31,6 +31,20 @@ class LocalControl:
             self._recorder = Recorder(self._config.record_venue_name, self._config.debug_enabled)
             self._recorder.maintain_connection(self._config.recorder_ip)
             # init recorder
+            self._poll_transport()
+
+    def _poll_transport(self):
+        def loop():
+            while 1:
+                try:
+                    self._recorder.get_transport()
+                except RecorderException:
+                    pass
+                time.sleep(20)
+
+        t = threading.Thread(target=loop)
+        t.daemon = True
+        t.start()
 
     def run(self):
         kpd = Keypad(self._config.debug_enabled)
@@ -65,7 +79,7 @@ class LocalControl:
                 self._display.write(1, "Enter event ID:")
                 self._cache_op = self.LOAD_EVENT
 
-            elif key == "KEY_KPSLASH":
+            elif key == "KEY_TAB":
                 self._display.clear()
                 self._cache_op = self.SPECIAL_FUNCTION
 

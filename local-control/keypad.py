@@ -31,7 +31,7 @@ class Keypad:
             "KEY_KP7",
             "KEY_KP8",
             "KEY_KP9",
-            "KEY_KPSLASH",
+            "KEY_TAB",
             "KEY_KPASTERISK",
             "KEY_KPMINUS",
             "KEY_KPPLUS",
@@ -41,7 +41,7 @@ class Keypad:
             # "KEY_SPACE",
             # "KEY_KPDOT",
             # "KEY_NUMLOCK",
-            # "KEY_TAB",
+            "KEY_KPSLASH",
             # "KEY_MAIL",
             # "KEY_CALC"
         ]

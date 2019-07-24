@@ -11,7 +11,7 @@ class RecorderException(Exception):
 
 
 class Recorder:
-    _disconnected = None  # type: Event
+    _attempt_connection = None  # type: Event
     _device = None  # type: hdr1
 
     def __init__(self, venue_name, debug_enabled=False):
@@ -21,24 +21,24 @@ class Recorder:
         self._venue_name = venue_name
         self._debug_enabled = debug_enabled
         self._device = None
-        self._disconnected = threading.Event()
+        self._attempt_connection = threading.Event()
+        self._connected = False
         self._device_ip_address = None
 
     def _connect(self):
         try:
             self._device = hdr1.Hdr1(self._device_ip_address, self._debug_enabled)
-            self._disconnected.clear()
+            self._attempt_connection.clear()
+            self._connected = True
             log("Connected to HD-R1 " + self._device_ip_address)
             return True
         except hdr1.ConnectionError as e:
             log("Failed to connect to HD-R1: " + e.message)
             return False
 
-    def connected(self):
-        return not self._disconnected.is_set()
-
     def _reconnect(self):
-        self._disconnected.set()
+        self._connected = False
+        self._attempt_connection.set()
 
     def maintain_connection(self, ip_address):
         self._device_ip_address = ip_address
@@ -48,8 +48,8 @@ class Recorder:
                 if not self._connect():
                     # if it did not connect immediately, wait a moment before trying again
                     time.sleep(5)
-                    self._disconnected.set()
-                self._disconnected.wait()
+                    self._attempt_connection.set()
+                self._attempt_connection.wait()
 
         t = threading.Thread(target=loop)
         t.daemon = True
@@ -59,10 +59,7 @@ class Recorder:
         # attempt this unit of work twice
         for attempt in range(1, 3):
             try:
-                # if we know we're disconnected, fail immediately
-                if self.connected():
-                    return fn(*args)
-                raise RecorderException("Not connected")
+                return fn(*args)
             except hdr1.ConnectionError:
                 # if we're disconnected, reconnect
                 self._reconnect()
@@ -76,11 +73,17 @@ class Recorder:
 
     def get_parameter(self, parameter):
         # type: (str) -> str
-        return self._send_command(self._device.get_parameter, parameter)
+        # if we know we're disconnected, fail immediately
+        if self._connected:
+            return self._send_command(self._device.get_parameter, parameter)
+        raise RecorderException("Not connected")
 
     def set_parameter(self, parameter, option):
         # type: (str, str) -> str
-        return self._send_command(self._device.set_parameter, parameter, option)
+        # if we know we're disconnected, fail immediately
+        if self._connected:
+            return self._send_command(self._device.set_parameter, parameter, option)
+        raise RecorderException("Not connected")
 
     def get_transport(self):
         return self.get_parameter("Transport")
