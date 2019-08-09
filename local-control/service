@@ -30,12 +30,6 @@ class LocalControl:
         if self._config.control_recorder:
             self._recorder = Recorder(self._config.record_venue_name, self._config.debug_enabled)
             self._recorder.maintain_connection(self._config.recorder_ip)
-            if self._config.control_recorder:
-                try:
-                    self._recorder.set_default_parameters()
-                    log('Recorder default params set')
-                except RecorderException as e:
-                    log('Could not set recorder default params')
             self._poll_transport()
 
     def _poll_transport(self):
@@ -53,6 +47,13 @@ class LocalControl:
 
     def run(self):
         kpd = Keypad(self._config.debug_enabled)
+        time.sleep(3)
+        if self._config.control_recorder:
+            try:
+                self._recorder.set_default_parameters()
+                log('Recorder default params set')
+            except RecorderException as e:
+                log('Could not set recorder default params')
         while True:
             key = kpd.monitor_input()
             if key is not None:
